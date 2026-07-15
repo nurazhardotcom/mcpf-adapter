@@ -1,0 +1,21 @@
+# Portals wiring — how to add MyCareersFuture to data-toolkit/templates/portals.yml.
+#
+# Copy the entry below into /home/nurazhar/Buffy/data-toolkit/templates/portals.yml
+# as a new list item. Since `portals.yml` is in data-toolkit/.gitignore, this
+# addition is entirely local and does not fork upstream.
+#
+# After copying, run:
+#   cd /home/nurazhar/Buffy
+#   bb mcpf-adapter/cli.bb scrape --query 'clojure' --pages 5   # populate cache
+#   bb mcpf-adapter/cli.bb emit --query 'clojure' --pages 5 | jq '.results[0]'  # sanity check
+#   cd data-toolkit && node scan.mjs                               # let data-toolkit consume
+
+- name: MyCareersFuture SG (via mcpf-adapter)
+  careers_url: https://www.mycareersfuture.gov.sg/
+  scan_method: local_parser
+  enabled: true
+  parser:
+    command: bb
+    script: ../mcpf-adapter/cli.bb
+    args: ["emit", "--query", "clojure", "--pages", "5"]
+    format: json   # the adapter prints a {results:[...]} JSON object on stdout

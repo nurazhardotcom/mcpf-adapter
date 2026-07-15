@@ -1,0 +1,43 @@
+;; mcpf-adapter configuration
+;;
+;; Loaded by cli.bb at startup. Any field missing here falls back to
+;; the built-in defaults defined in cli.bb.
+
+{
+ ;; Default list of search queries the operator will iterate over.
+ ;; Tied to the operator's archetypes from data-toolkit/config/profile.yml:
+ ;;   - agentic-ai-operator (primary)
+ ;;   - clojure-functional-engineer (secondary)
+ ;;   - ai-compliance-engineer (secondary)
+ ;;   - local-first-systems-engineer (adjacent)
+ :queries
+ ["clojure"
+  "babashka"
+  "agentic ai"
+  "compliance engineer"
+  "local-first engineer"
+  "clojure engineer"
+  "site reliability engineer"]
+
+ ;; Number of listings requested per /v2/search POST.
+ :page-size 50
+
+ ;; Default number of pages to walk per scrape run.
+ ;; At 50 listings × 5 pages = 250 listings per query.
+ :default-pages 5
+
+ ;; Politeness delay between paginations (milliseconds).
+ ;; MCF v2 is an unofficial endpoint; conservative is mandatory.
+ :sleep-ms 3000
+
+ ;; Browser-like User-Agent header.
+ :user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+
+ ;; Minimum monthly SGD salary to include when emitting.
+ ;; Career-ops's evaluation pipeline will still see all listings;
+ ;; this is just a hint when iterating manually.
+ :salary-min-sgd 6000
+
+ ;; Hard cap on total listings emitted per query (defensive).
+ :postings-per-query-cap 1000
+}
