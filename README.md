@@ -1,5 +1,10 @@
 # mcpf-adapter
 
+[![Latest Release](https://gitlab.com/nurazhar/mcpf-adapter/-/badges/release.svg)](https://gitlab.com/nurazhar/mcpf-adapter/-/releases)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+
+`mcpf-adapter v1.0.0` · Last verified 2026-07-16 · MIT ©2026 Nur Azhar
+
 Babashka CLI bridging **Singapore MyCareersFuture (MCF) v2 API** with the vendored **data-toolkit** AI job-search toolkit.
 
 ## Why this exists
