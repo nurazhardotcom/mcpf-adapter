@@ -3,30 +3,12 @@
 [![Latest Release](https://gitlab.com/nurazhar/mcpf-adapter/-/badges/release.svg)](https://gitlab.com/nurazhar/mcpf-adapter/-/releases)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
-`mcpf-adapter v1.0.0` · Last verified 2026-07-16 · MIT ©2026 Nur Azhar
-
-Babashka CLI bridging **Singapore MyCareersFuture (MCF) v2 API** with the vendored **data-toolkit** AI job-search toolkit.
+Babashka CLI bridging **Singapore MyCareersFuture (MCF) v2 API** — scrape, emit, and cache job listings as structured JSONL for downstream analysis.
 
 ## Why this exists
 
-- `data-toolkit/` (vendored from `https://github.com/santifer/data-toolkit.git`) does **not** ship with an MCF provider.
-- MCF v2 is the official Singapore government jobs backend (operated by Workforce Singapore / Ministry of Manpower); it is the only source of FCF-compliant, salary-transparent, government-vetted SG job listings.
-- This adapter adds MCF to the operator's job-search pipeline **without forking or modifying any upstream-tracked file**.
-
-## Upstream-isolation guarantee
-
-- Lives as a sibling project at `/home/nurazhar/Buffy/mcpf-adapter/`.
-- Never writes to any tracked file inside `/home/nurazhar/Buffy/data-toolkit/`.
-- The only optional wire-in is a single new file: `/home/nurazhar/Buffy/data-toolkit/templates/portals.yml` — **which is gitignored by upstream**, so it does not fork anything.
-- Pull upstream improvements at any time:
-
-  ```
-  cd /home/nurazhar/Buffy/data-toolkit
-  git fetch origin
-  git pull --ff-only origin main
-  ```
-
-  Result: zero merge conflicts, zero custom patches to clean up.
+- MCF v2 is the official Singapore government jobs backend (operated by Workforce Singapore / Ministry of Manpower); the only source of FCF-compliant, salary-transparent, government-vetted SG job listings.
+- This adapter wraps the internal API into a lightweight zero-dependency CLI — no Python, no Playwright, no Node.js required.
 
 ## Files
 
@@ -36,7 +18,6 @@ Babashka CLI bridging **Singapore MyCareersFuture (MCF) v2 API** with the vendor
 | `config.edn` | Default queries, page size, sleep delay, User-Agent |
 | `cache/raw/` | SHA-256-keyed raw JSON responses (gitignored) |
 | `cache/processed-ids.txt` | Flat TSV of `jobPostId`s already emitted (gitignored) |
-| `portals.snippet.yml` | Drop-in entry for `data-toolkit/templates/portals.yml` |
 | `.gitignore` | Excludes `cache/` |
 
 ## Configuration (`config.edn`)
@@ -57,22 +38,27 @@ Babashka CLI bridging **Singapore MyCareersFuture (MCF) v2 API** with the vendor
 
 ```edn
 :queries
-["clojure"
- "babashka"
- "agentic ai"
- "compliance engineer"
- "local-first engineer"
- "clojure engineer"
- "site reliability engineer"]
-```
-
-These map to the operator archetypes in `data-toolkit/config/profile.yml`. To run the full rotation:
-
-```bash
-for q in $(bb -e '(-> "mcpf-adapter/config.edn" slurp clojure.edn/read-string :queries prn)'); do
-  bb mcpf-adapter/cli.bb scrape --query "$q" --pages 3
-  bb mcpf-adapter/cli.bb emit  --query "$q" --pages 3 >> /tmp/mcpf-all.jsonl
-done
+["compliance"
+ "risk"
+ "governance risk"
+ "grc"
+ "audit"
+ "regulatory compliance"
+ "internal control"
+ "information security governance"
+ "technology risk"
+ "operational risk"
+ "vendor risk"
+ "third party risk"
+ "data privacy"
+ "data protection"
+ "p d p a"
+ "business continuity"
+ "fraud"
+ "sanctions"
+ "identity access management"
+ "security policy"
+ "assurance"]
 ```
 
 ### Per-invocation overrides
@@ -80,7 +66,7 @@ done
 Any config key can be overridden on the command line:
 
 ```bash
-bb mcpf-adapter/cli.bb scrape --query 'clojure' --pages 2 --sleep-ms 5000
+bb cli.bb scrape --query 'compliance' --pages 2 --sleep-ms 5000
 ```
 
 `--pages` and `--sleep-ms` override `:default-pages` and `:sleep-ms` respectively. `--query` is always required for `scrape` / `emit`.
@@ -92,10 +78,10 @@ bb mcpf-adapter/cli.bb scrape --query 'clojure' --pages 2 --sleep-ms 5000
 bb cli.bb test
 
 # Fetch multiple pages for one query (writes to cache)
-bb cli.bb scrape --query 'clojure' --pages 5 --sleep-ms 3000
+bb cli.bb scrape --query 'compliance' --pages 5 --sleep-ms 3000
 
-# Emit data-toolkit-shaped JSONL to stdout (one record per line)
-bb cli.bb emit --query 'clojure' --pages 5
+# Emit JSONL to stdout (one record per line)
+bb cli.bb emit --query 'compliance' --pages 5
 
 # Inspect cache state
 bb cli.bb status
@@ -104,16 +90,15 @@ bb cli.bb status
 bb cli.bb clear
 ```
 
-## Output contract (data-toolkit local_parser schema)
+## Output schema
 
-Per `data-toolkit/docs/local-parser-cookbook.md`, the `emit` subcommand prints
-a single JSON object on stdout with this wire shape:
+The `emit` subcommand prints a single JSON object on stdout with this wire shape:
 
 ```json
 {
   "results": [
     {
-      "title": "Senior Clojure Engineer",
+      "title": "Senior Compliance Officer",
       "url":  "https://www.mycareersfuture.gov.sg/job/...",
       "company": "Acme Co",
       "location": "Central 123456",
@@ -121,7 +106,7 @@ a single JSON object on stdout with this wire shape:
       "salary_max": 12000,
       "salary_type": "Monthly",
       "salary_annualized_sgd": {"min": 96000, "max": 144000},
-      "skills": "Clojure, Babashka, PostgreSQL",
+      "skills": "Risk Management, Regulatory Compliance",
       "posted_at": "2026-07-10T00:00:00Z",
       "job_post_id": "MCF-2026-XXXXXXX",
       "uuid": "...",
@@ -131,8 +116,7 @@ a single JSON object on stdout with this wire shape:
 }
 ```
 
-`title` and `url` are mandatory (data-toolkit); all other fields are optional
-but used by `cv.md` evaluation heuristics.
+`title` and `url` are mandatory; all other fields are optional but preserved for downstream consumers.
 
 ## Idempotency / dedup
 
@@ -164,9 +148,9 @@ Mitigations baked into this adapter:
 | Time block | What | Where |
 |---|---|---|
 | Pre-launch smoke | `bb cli.bb test` | any time |
-| Weekly refresh | `for q in clojure babashka "agentic ai"; do bb cli.bb scrape --query "$q" --pages 3; done` | 30 min run |
-| Pipeline drop | `bb cli.bb emit --query 'clojure' --pages 3 > /tmp/mcpf-clojure.jsonl && cd data-toolkit && npm run pipeline -- < /tmp/mcpf-clojure.jsonl` | 5 min run |
+| Weekly refresh | `for q in compliance risk grc audit; do bb cli.bb scrape --query "$q" --pages 3; done` | 30 min run |
+| Pipeline drop | `bb cli.bb emit --query 'compliance' --pages 3 > /tmp/mcpf-compliance.jsonl` | 5 min run |
 
 ## License
 
-MIT. Same as the upstream `data-toolkit` project.
+MIT.
