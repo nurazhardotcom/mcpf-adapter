@@ -204,11 +204,12 @@
 (defn format-location [address]
   (let [d (district-string address)
         p (:postalCode address)]
-    (cond
-      (and d p) (str d " " p)
-      d         (str d " (no postal)")
-      p         (str p " (no district)")
-      :else     "Singapore")))
+    (str (cond
+           (and d p) (str d " " p)
+           d         (str d " (no postal)")
+           p         (str p " (no district)")
+           :else     "")
+         ", Singapore")))
 
 (defn annualize-factor [salary-type]
   (case salary-type
