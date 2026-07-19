@@ -39,6 +39,52 @@ Babashka CLI bridging **Singapore MyCareersFuture (MCF) v2 API** with the vendor
 | `portals.snippet.yml` | Drop-in entry for `data-toolkit/templates/portals.yml` |
 | `.gitignore` | Excludes `cache/` |
 
+## Configuration (`config.edn`)
+
+`cli.bb` loads `config.edn` at startup and merges it over the built-in defaults. Any missing key falls back to the default in `cli.bb`.
+
+| Key | Type | Default | Used by | Description |
+|---|---|---|---|---|
+| `:queries` | vector of strings | see below | external scripts | Default search-query rotation for weekly scans. `cli.bb` does **not** iterate over this list automatically. |
+| `:page-size` | int | `50` | `scrape`, `emit` | Listings requested per `/v2/search` page. MCF v2 honors up to ~50. |
+| `:default-pages` | int | `5` | `scrape`, `emit` | Pages to walk when `--pages` is omitted. `50 × 5 = 250` listings per query. |
+| `:sleep-ms` | int | `3000` | `scrape` | Delay between paginations. Unofficial endpoint — keep it conservative. |
+| `:user-agent` | string | Chrome on Linux | `scrape`, `emit`, `test` | Browser-like `User-Agent` header. |
+| `:salary-min-sgd` | int | `6000` | downstream only | Advisory monthly-salary floor. **Not enforced by `cli.bb`.** |
+| `:postings-per-query-cap` | int | `1000` | downstream only | Advisory per-query cap. **Not enforced by `cli.bb`.** |
+
+### Default query rotation
+
+```edn
+:queries
+["clojure"
+ "babashka"
+ "agentic ai"
+ "compliance engineer"
+ "local-first engineer"
+ "clojure engineer"
+ "site reliability engineer"]
+```
+
+These map to the operator archetypes in `data-toolkit/config/profile.yml`. To run the full rotation:
+
+```bash
+for q in $(bb -e '(-> "mcpf-adapter/config.edn" slurp clojure.edn/read-string :queries prn)'); do
+  bb mcpf-adapter/cli.bb scrape --query "$q" --pages 3
+  bb mcpf-adapter/cli.bb emit  --query "$q" --pages 3 >> /tmp/mcpf-all.jsonl
+done
+```
+
+### Per-invocation overrides
+
+Any config key can be overridden on the command line:
+
+```bash
+bb mcpf-adapter/cli.bb scrape --query 'clojure' --pages 2 --sleep-ms 5000
+```
+
+`--pages` and `--sleep-ms` override `:default-pages` and `:sleep-ms` respectively. `--query` is always required for `scrape` / `emit`.
+
 ## Commands
 
 ```bash

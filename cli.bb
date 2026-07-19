@@ -56,7 +56,12 @@
 (def cache-dir     "./cache")
 (def raw-cache-dir "./cache/raw")
 (def ids-file      "./cache/processed-ids.txt")
-(def config-file   "./config.edn")
+
+;; Resolve config.edn relative to this script's directory so tasks like
+;; `bb mcpf:status` (run from the project root) still find it.
+(def config-file
+  (let [this-dir (or (some-> *file* io/file .getParent) ".")]
+    (.getPath (io/file this-dir "config.edn"))))
 
 (defn root-cache-dir! []
   (doseq [d ["./"]]
@@ -430,7 +435,7 @@
                   fresh (->> raw
                              (remove #(seen (listing-dedupe-key %)))
                              (filter listing-has-valid-title?))]  ;; coalesced ->> thunk (filter keeps non-blank titles)
-              (swap! raw-new count fresh)
+              (swap! raw-new + (count fresh))
               (swap! raw-by-page conj {:page p :raw (count raw) :fresh (count fresh)})
               (doseq [m fresh] (when-let [k (listing-dedupe-key m)] (append-processed-id! k)))
               (println (str "  page " p " raw=" (count raw) " fresh=" (count fresh)))
@@ -490,6 +495,68 @@
   (println "[clear] cache reset"))
 
 ;; ===========================================================================
+;; Offline self-test — run with:  bb cli.bb self-test
+;;
+;; Regression guard for the annualize arg-swap bug discovered during the
+;; clj-skill-eval evaluation. If someone swaps sal-min and sal-max in the
+;; annualize call inside transform-listing, the Monthly test produces
+;; {:min 144000, :max 96000} instead of {:min 96000, :max 144000} and the
+;; assertions fail immediately — no network required.
+;; ===========================================================================
+
+(defn run-self-test []
+  (println "[self-test] annualize + transform-listing regression guard")
+  (let [monthly-listing
+        {:title     "Senior Software Engineer"
+         :jobPostId "TEST-MONTHLY-1"
+         :uuid      "u-monthly"
+         :salary    {:minimum 8000 :maximum 12000 :type {:salaryType "Monthly"}}
+         :skills    [{:skill "Clojure"} {:skill "Babashka"}]
+         :metadata  {:newPostingDate "2026-07-01T00:00:00Z"}}
+
+        annual-listing
+        {:title     "Engineering Manager"
+         :jobPostId "TEST-ANNUAL-1"
+         :uuid      "u-annual"
+         :salary    {:minimum 100000 :maximum 150000 :type {:salaryType "Annual"}}
+         :skills    [{:skill "Leadership"} {:skill "Scala"}]
+         :metadata  {:newPostingDate "2026-06-15T00:00:00Z"}}
+
+        monthly-result (transform-listing monthly-listing)
+        annual-result  (transform-listing annual-listing)
+
+        monthly-ann (:salary_annualized_sgd monthly-result)
+        annual-ann  (:salary_annualized_sgd annual-result)]
+
+    (println (str "  Monthly 8000–12000 → annualized: " (pr-str monthly-ann)))
+    (println (str "  Annual 100000–150000 → annualized: " (pr-str annual-ann)))
+
+    ;; Monthly: 8000 × 12 = 96000, 12000 × 12 = 144000
+    ;; If args are swapped, min would be 144000 and max would be 96000.
+    (assert (= (:min monthly-ann) 96000)
+            (str "Monthly min should be 96000 (8000×12), got " (:min monthly-ann)
+                 " — arg-swap regression suspected!"))
+    (assert (= (:max monthly-ann) 144000)
+            (str "Monthly max should be 144000 (12000×12), got " (:max monthly-ann)
+                 " — arg-swap regression suspected!"))
+    ;; Annual: factor is 1, values pass through unchanged.
+    ;; If args are swapped, min would be 150000 and max would be 100000.
+    (assert (= (:min annual-ann) 100000)
+            (str "Annual min should be 100000 (passthrough), got " (:min annual-ann)
+                 " — arg-swap regression suspected!"))
+    (assert (= (:max annual-ann) 150000)
+            (str "Annual max should be 150000 (passthrough), got " (:max annual-ann)
+                 " — arg-swap regression suspected!"))
+
+    ;; Verify :salary_type and raw salary fields are preserved
+    (assert (= (:salary_type monthly-result) "Monthly"))
+    (assert (= (:salary_min monthly-result) 8000))
+    (assert (= (:salary_max monthly-result) 12000))
+    (assert (= (:salary_type annual-result) "Annual"))
+
+    (println "[self-test] ALL ASSERTIONS PASSED")))
+
+;; ===========================================================================
 ;; CLI dispatcher (manual arg parsing; keeps zero dependencies)
 ;; ===========================================================================
 
@@ -513,7 +580,8 @@
   (println "  scrape   --query 'clojure'      fetch + cache + dedup")
   (println "  emit     --query 'clojure'      print data-toolkit local_parser JSONL on stdout")
   (println "  status                           cache stats")
-  (println "  clear                            reset cache"))
+  (println "  clear                            reset cache")
+  (println "  self-test                        offline annualize regression guard (no network)"))
 
 (defn -main [& argv]
   (let [cmd (first argv)
@@ -521,11 +589,12 @@
     (if (or (:help opts) (nil? cmd))
       (usage)
       (case cmd
-        "test"   (cmd-test)
-        "scrape" (cmd-scrape opts)
-        "emit"   (cmd-emit opts)
-        "status" (cmd-status)
-        "clear"  (cmd-clear)
+        "test"       (cmd-test)
+        "scrape"     (cmd-scrape opts)
+        "emit"       (cmd-emit opts)
+        "status"     (cmd-status)
+        "clear"      (cmd-clear)
+        "self-test"  (run-self-test)
         (usage)))))
 
 (when (System/getProperty "babashka.file")
