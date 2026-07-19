@@ -455,15 +455,12 @@
     (System/exit 1))
   (let [cfg (load-config)
         pgs  (or pages (:default-pages cfg))
-        seen (set (read-processed-ids))
         out  (atom [])]
     (dotimes [p pgs]
       (let [p2 (cache-path (cache-key query p))]
         (when (file-exists? p2)
           (let [raw (results-from-body (slurp p2))
-                fresh (->> raw
-                           (remove #(seen (listing-dedupe-key %)))
-                           (filter listing-has-valid-title?))]  ;; coalesced ->> thunk (filter keeps non-blank titles)
+                fresh (filter listing-has-valid-title? raw)]  ;; no dedup — caller (scan.mjs) owns the dedup
             (swap! out into (map transform-listing fresh))))))
     ;; Invariants: every emitted record must be a market-intelligence
     ;; primitive. assert-emit-invariants! exits 3 (and prints diagnostic to

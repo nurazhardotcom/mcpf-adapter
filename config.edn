@@ -32,10 +32,10 @@
   "fraud"
   "sanctions"
   "identity access management"
-  "security policy"
-  "assurance"
+   "security policy"
+   "assurance"]
 
- ;; Number of listings requested per /v2/search POST.
+  ;; Number of listings requested per /v2/search POST.
  ;; MCF v2 appears to honor up to 50; lower values are slower but gentler.
  :page-size 50
 
