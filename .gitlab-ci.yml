@@ -7,10 +7,32 @@ mirror-github:
   before_script:
     - apk add --no-cache git
   script:
-    - git remote set-url origin "https://x-access-token:${GH_MIRROR_TOKEN}@github.com/nurazhardotcom/${CI_PROJECT_NAME}.git"
-    - git push origin HEAD:main --force
+    - echo "=== DEBUG: env vars (masked) ==="
+    - echo "CI_PROJECT_NAME=$CI_PROJECT_NAME"
+    - echo "CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME"
+    - echo "CI_DEFAULT_BRANCH=$CI_DEFAULT_BRANCH"
+    - echo "GH_MIRROR_TOKEN length=${#GH_MIRROR_TOKEN}"
+    - echo "GH_MIRROR_TOKEN first 4 chars=${GH_MIRROR_TOKEN:0:4}"
+    - echo "GH_MIRROR_TOKEN last 4 chars=${GH_MIRROR_TOKEN: -4}"
+    - echo "=== DEBUG: bare git version + credential config ==="
+    - git --version
+    - git config --global --list 2>&1 | head -10 || echo 'no global config'
+    - echo "=== DEBUG: git remote before ==="
+    - git remote -v
+    - echo "=== DEBUG: URL construction ==="
+    - CONSTRUCTED_URL="https://x-access-token:${GH_MIRROR_TOKEN}@github.com/nurazhardotcom/${CI_PROJECT_NAME}.git"
+    - echo "URL length: ${#CONSTRUCTED_URL}"
+    - echo "URL prefix: ${CONSTRUCTED_URL:0:30}..."
+    - echo "URL suffix: ...${CONSTRUCTED_URL: -30}"
+    - echo "=== DEBUG: setting remote URL ==="
+    - git remote set-url origin "$CONSTRUCTED_URL"
+    - echo "=== DEBUG: git remote after ==="
+    - git remote -v
+    - echo "=== DEBUG: trying push ==="
+    - git push origin HEAD:main --force 2>&1 || echo "PUSH FAILED, code=$?"
+    - echo "=== DEBUG: done ==="
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   allow_failure: true
   variables:
     GIT_STRATEGY: fetch
