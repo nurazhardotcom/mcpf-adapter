@@ -7,7 +7,7 @@ mirror-github:
   before_script:
     - apk add --no-cache git
   script:
-    - git -c "http.extraHeader=Authorization: token ${GH_MIRROR_TOKEN}" push https://github.com/nurazhardotcom/${CI_PROJECT_NAME}.git HEAD:main --force
+    - 'git -c "credential.helper=" -c "http.extraHeader=Authorization: token ${GH_MIRROR_TOKEN}" push https://github.com/nurazhardotcom/${CI_PROJECT_NAME}.git HEAD:main --force --verbose'
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   allow_failure: true
