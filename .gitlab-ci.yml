@@ -7,8 +7,7 @@ mirror-github:
   before_script:
     - apk add --no-cache git
   script:
-    - git remote set-url origin "https://x-access-token:${GH_MIRROR_TOKEN}@github.com/nurazhardotcom/${CI_PROJECT_NAME}.git"
-    - git push origin HEAD:main --force
+    - git -c "http.extraHeader=Authorization: token ${GH_MIRROR_TOKEN}" push https://github.com/nurazhardotcom/${CI_PROJECT_NAME}.git HEAD:main --force
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   allow_failure: true
