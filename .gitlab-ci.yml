@@ -5,38 +5,10 @@ mirror-github:
   stage: mirror
   image: alpine:latest
   before_script:
-    - apk add --no-cache git bash
+    - apk add --no-cache git
   script:
-    - bash -c '
-        set -e
-        echo "=== ENV CHECK ==="
-        echo "CI_PROJECT_NAME=$CI_PROJECT_NAME"
-        echo "CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME"
-        echo "CI_DEFAULT_BRANCH=$CI_DEFAULT_BRANCH"
-        echo "TOKEN_LENGTH=${#GH_MIRROR_TOKEN}"
-        echo "TOKEN_PREFIX=$(echo "$GH_MIRROR_TOKEN" | cut -c1-4)"
-        echo "TOKEN_SUFFIX=$(echo "$GH_MIRROR_TOKEN" | rev | cut -c1-4 | rev)"
-        echo "=== GIT CONFIG ==="
-        git --version
-        echo "--- git config global ---"
-        git config --global --list | head -10 || echo "no global"
-        echo "--- git config local ---"
-        git config --local --list | head -10 || echo "no local"
-        echo "=== REMOTE BEFORE ==="
-        git remote -v
-        echo "=== BUILD URL ==="
-        URL="https://x-access-token:${GH_MIRROR_TOKEN}@github.com/nurazhardotcom/${CI_PROJECT_NAME}.git"
-        echo "URL_LENGTH=${#URL}"
-        echo "URL_FIRST_50=${URL:0:50}"
-        echo "URL_LAST_20=${URL: -20}"
-        echo "=== SET REMOTE ==="
-        git remote set-url origin "$URL"
-        echo "=== REMOTE AFTER ==="
-        git remote -v
-        echo "=== PUSH ATTEMPT ==="
-        git push origin HEAD:main --force --verbose 2>&1 || echo "PUSH_FAILED_RC=$?"
-        echo "=== END ==="
-      '
+    - git remote set-url origin "https://x-access-token:${GH_MIRROR_TOKEN}@github.com/nurazhardotcom/${CI_PROJECT_NAME}.git"
+    - git push origin HEAD:main --force
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   allow_failure: true
