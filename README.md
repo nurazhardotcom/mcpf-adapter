@@ -3,7 +3,13 @@
 [![Latest Release](https://gitlab.com/nurazhar/mcpf-adapter/-/badges/release.svg)](https://gitlab.com/nurazhar/mcpf-adapter/-/releases)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
-Babashka CLI bridging **Singapore MyCareersFuture (MCF) v2 API** — scrape, emit, and cache job listings as structured JSONL for downstream analysis.
+Babashka CLI for Singapore's **MyCareersFuture (MCF) public job search** — query, filter, cache, and emit listings as structured JSONL for personal labour-market research.
+
+## Terms of use (read first)
+
+- Uses the site's public, unauthenticated search endpoint with conservative rate limits (1 in-flight request, 3s+ between pages, browser-like `User-Agent`).
+- Personal research use only. Respect the site's Terms of Use; do not use for bulk harvesting, resale, or spam.
+- Unofficial project — no affiliation with Workforce Singapore / Ministry of Manpower.
 
 ## Why this exists
 
@@ -77,7 +83,8 @@ bb cli.bb scrape --query 'compliance' --pages 2 --sleep-ms 5000
 # Live network probe — no cache write. First thing to run.
 bb cli.bb test
 
-# Fetch multiple pages for one query (writes to cache)
+# Fetch multiple pages for one query (writes to cache).
+# `scrape` = sequential, delay-spaced queries per Terms of use above.
 bb cli.bb scrape --query 'compliance' --pages 5 --sleep-ms 3000
 
 # Emit JSONL to stdout (one record per line)
@@ -86,7 +93,7 @@ bb cli.bb emit --query 'compliance' --pages 5
 # Inspect cache state
 bb cli.bb status
 
-# Wipe the cache (e.g. before a fresh re-scrape)
+# Wipe the cache (e.g. before a fresh refresh)
 bb cli.bb clear
 ```
 
@@ -131,7 +138,7 @@ The `emit` subcommand prints a single JSON object on stdout with this wire shape
 - Browser-like `User-Agent` (configurable in `config.edn`).
 - Network failures logged to stderr, **non-fatal** — the script returns whatever the cache has.
 
-## Caveat: MCF v2 is unofficial
+## Caveat: MCF v2 is unofficial (see Terms of use above)
 
 `api.mycareersfuture.gov.sg/v2` is the website's internal backend, not a
 published third-party API. It is unauthenticated today, but may rate-limit,
