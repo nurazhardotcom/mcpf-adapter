@@ -2,7 +2,7 @@
 
 > **Status:** Active — used weekly for personal labour-market research.
 
-[![Latest Release](https://gitlab.com/nurazhar/mcpf-adapter/-/badges/release.svg)](https://gitlab.com/nurazhar/mcpf-adapter/-/releases)
+[![Latest Release](https://img.shields.io/github/v/release/nurazhardotcom/mcpf-adapter)](https://github.com/nurazhardotcom/mcpf-adapter/releases)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
 Babashka CLI for Singapore's **MyCareersFuture (MCF) public job search** — query, filter, cache, and emit listings as structured JSONL for personal labour-market research.
