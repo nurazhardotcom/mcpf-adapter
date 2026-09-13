@@ -1,5 +1,7 @@
 # mcpf-adapter
 
+> **Status:** Active — used weekly for personal labour-market research.
+
 [![Latest Release](https://gitlab.com/nurazhar/mcpf-adapter/-/badges/release.svg)](https://gitlab.com/nurazhar/mcpf-adapter/-/releases)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
